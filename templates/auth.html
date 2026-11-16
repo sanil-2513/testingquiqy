@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}{{ mode|title }} · GoodBite{% endblock %}{% block content %}
+<section class="panel narrow"><h1>{{ 'Create account' if mode=='register' else 'Welcome back' }}</h1>
+<form method="post">
+{% if mode=='register' %}<label>Name<input name="name" required maxlength="120"></label>{% endif %}
+<label>Email<input type="email" name="email" required></label>
+<label>Password<input type="password" name="password" required minlength="8"></label>
+<button class="primary">{{ 'Register' if mode=='register' else 'Login' }}</button></form>
+<p>{% if mode=='register' %}Already registered? <a href="{{ url_for('login') }}">Login</a>{% else %}New here? <a href="{{ url_for('register') }}">Create account</a>{% endif %}</p></section>{% endblock %}

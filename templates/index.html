@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% block content %}
+<section class="hero"><div><p class="eyebrow">FRESH · FAST · GOOD</p><h1>Good food.<br><span>Good mood.</span></h1><p>Choose your favourites, customize your meal and track your order.</p></div><div class="hero-icon">🍔</div></section>
+<div class="layout"><section>
+<div class="section-head"><div><p class="eyebrow">OUR MENU</p><h2>Explore the menu</h2></div><span class="muted">{{ foods|length }} items</span></div>
+<div class="food-grid">{% for food in foods %}<article class="food-card"><div class="food-emoji">{{ '🍔' if food.category=='main' else '🍟' if food.category=='side' else '🥤' if food.category=='drink' else '🍰' }}</div>
+<div class="food-info"><span class="tag">{{ food.category }}</span><h3>{{ food.name }}</h3><p>{{ food.description }}</p><strong>₹{{ '%.2f'|format(food.price) }}</strong>
+{% if user %}<form method="post" action="{{ url_for('add_to_cart',item_id=food.id) }}" class="add-form">
+{% if food.category=='main' %}<details><summary>Customize +</summary>{% for key,addon in addons.items() %}<label class="check"><input type="checkbox" name="addons" value="{{ key }}"> {{ addon.label }} (+₹{{ addon.price }})</label>{% endfor %}</details>{% endif %}
+<button class="primary small">Add to cart</button></form>{% else %}<a class="primary small inline" href="{{ url_for('login') }}">Login to order</a>{% endif %}
+{% if user and user.role=='admin' %}<form method="post" action="{{ url_for('delete_menu_item',item_id=food.id) }}"><button class="danger small">Delete item</button></form>{% endif %}</div></article>{% endfor %}</div>
+{% if user and user.role=='admin' %}<section class="panel"><h2>Admin · Add menu item</h2><form method="post" action="{{ url_for('add_menu_item') }}" class="form-grid"><input name="name" placeholder="Item name" required><input name="description" placeholder="Description" required><select name="category"><option value="main">Main</option><option value="side">Side</option><option value="drink">Drink</option><option value="dessert">Dessert</option></select><input type="number" step="0.01" min="0.01" name="price" placeholder="Price" required><button class="primary">Add item</button></form></section>{% endif %}
+</section>
+<aside class="side-column"><section class="panel cart-panel"><div class="section-head"><h2>Your cart</h2><span class="count">{{ cart.count }}</span></div>
+{% if cart.items %}{% for item in cart.items %}<div class="cart-line"><div><strong>{{ item.name }}</strong><small>₹{{ '%.2f'|format(item.price) }} each</small><div class="qty">
+<form method="post" action="{{ url_for('change_quantity',line_id=item.line_id) }}"><input type="hidden" name="amount" value="-1"><button>−</button></form><span>{{ item.quantity }}</span>
+<form method="post" action="{{ url_for('change_quantity',line_id=item.line_id) }}"><input type="hidden" name="amount" value="1"><button>+</button></form>
+<form method="post" action="{{ url_for('remove_from_cart',line_id=item.line_id) }}"><button class="remove">×</button></form></div></div><b>₹{{ '%.2f'|format(item.price*item.quantity) }}</b></div>{% endfor %}
+<div class="total"><span>Subtotal</span><strong>₹{{ '%.2f'|format(cart.total) }}</strong></div>
+{% if user %}<form method="post" action="{{ url_for('checkout') }}" class="checkout-form"><label>Delivery address<textarea name="address" rows="2" required placeholder="House, street, city"></textarea></label><label>Discount<select name="discount_type">{% for key,value in discount_options.items() %}<option value="{{ key }}">{{ value }}</option>{% endfor %}</select></label><label>Payment method<select name="payment_method">{% for key,value in payment_methods.items() %}<option value="{{ key }}">{{ value }}</option>{% endfor %}</select></label><button class="primary full">Pay & place order · ₹{{ '%.2f'|format(cart.total) }} before discount</button><small>Payment is simulated for this academic project. No real money is charged.</small></form>{% endif %}
+<form method="post" action="{{ url_for('clear_cart') }}"><button class="ghost full">Clear cart</button></form>
+{% else %}<p class="muted">Your cart is empty. Add something delicious!</p>{% endif %}</section>
+{% if user %}<section class="panel"><h3>Build a meal combo</h3><p class="muted">Choose one main, side and drink.</p><form method="post" action="{{ url_for('add_combo') }}" class="checkout-form">
+{% for cat in ['main','side','drink'] %}<label>{{ cat|title }}<select name="{{ cat }}" required>{% for f in foods if f.category==cat %}<option value="{{ f.id }}">{{ f.name }} · ₹{{ f.price }}</option>{% endfor %}</select></label>{% endfor %}<button class="secondary full">Build combo</button></form></section>{% endif %}
+{% if user %}<section class="panel"><h3>Your orders</h3>{% for order in orders %}<div class="order-line"><div><strong>Order #{{ order.id }}</strong><small>{{ order.created_at }}</small><span class="status">{{ order.status }}</span></div><a href="{{ url_for('order_detail',order_id=order.id) }}">Details →</a>
+{% if user.role=='admin' and order.status not in ['Delivered','Cancelled'] %}<form method="post" action="{{ url_for('advance_order',order_id=order.id) }}"><button class="small secondary">Advance status</button></form>{% endif %}</div>{% else %}<p class="muted">No orders yet.</p>{% endfor %}</section>{% endif %}
+</aside></div>{% endblock %}
